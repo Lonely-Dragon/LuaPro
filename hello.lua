@@ -54,7 +54,291 @@ print(a / b)
 --5.3 版本后才有
 --print(a // b)
 
-print("12".."34")
-str = "12".."34"
+print("12" .. "34")
+str = "12" .. "34"
 print(#str)
 
+--在字符串中替换。
+--mainString 为要操作的字符串， findString 为被替换的字符，replaceString 要替换的字符，num 替换次数（可以忽略，则全部替换），如：
+print(string.gsub("aaaa", "a", "z", 3));
+
+--string.find (str, substr, [init, [plain]])
+--在一个指定的目标字符串 str 中搜索指定的内容 substr，如果找到了一个匹配的子串，就会返回这个子串的起始索引和结束索引，不存在则返回 nil。
+--init 指定了搜索的起始位置，默认为 1，可以一个负数，表示从后往前数的字符个数。
+--plain 表示是否使用简单模式，默认为 false，true 只做简单的查找子串的操作，false 表示使用使用正则模式匹配。
+--以下实例查找字符串 "Lua" 的起始索引和结束索引位置：
+
+print(string.find("Hello Lua user", "Lua", 1))
+
+print(string.reverse("hello"))
+print(string.rep("hello", 3))
+
+--string.match(str, pattern, init)
+--string.match()只寻找源字串str中的第一个配对. 参数init可选, 指定搜寻过程的起点, 默认为1。
+--在成功配对时, 函数将返回配对表达式中的所有捕获结果; 如果没有设置捕获标记, 则返回整个配对字符串. 当没有成功的配对时, 返回nil。
+print(string.match("I have 2 questions for you.", "%d+ %a+"))
+--2 questions
+
+print(string.format("%d, %q", string.match("I have 2 questions for you.", "(%d+) (%a+)")))
+--2, "questions"
+
+array = { "Lua", "Tutorial" }
+
+for i = 0, 2 do
+    print(array[i])
+end
+
+--正如你所看到的，我们可以使用整数索引来访问数组元素，如果指定的索引没有值则返回 nil。
+--在 Lua 索引值是以 1 为起始，但你也可以指定 0 开始。
+--除此外我们还可以以负数为数组索引值：
+
+array = {}
+
+for i = -2, 2 do
+    array[i] = i * 2
+end
+
+for i = -2, 2 do
+    print(array[i])
+end
+
+--无状态的迭代器是指不保留任何状态的迭代器，因此在循环中我们可以利用无状态迭代器避免创建闭包花费额外的代价。
+--每一次迭代，迭代函数都是用两个变量（状态常量和控制变量）的值作为参数被调用，一个无状态的迭代器只利用这两个值可以获取下一个元素。
+--这种无状态迭代器的典型的简单的例子是 ipairs，它遍历数组的每一个元素，元素的索引需要是数值。
+--以下实例我们使用了一个简单的函数来实现迭代器，实现 数字 n 的平方：
+function square(iteratorMaxCount, currentNumber)
+    if currentNumber < iteratorMaxCount
+    then
+        currentNumber = currentNumber + 1
+        return currentNumber, currentNumber * currentNumber
+    end
+end
+for i, n in square, 3, 0
+do
+    print(i, n)
+end
+
+-- 初始化表
+mytable = {}
+
+-- 指定值
+mytable[1] = "Lua"
+print(mytable)
+-- 移除引用
+mytable = nil
+-- lua 垃圾回收会释放内存
+
+
+-- 计算表中最大值，table.maxn在Lua5.2以上版本中已无法使用
+-- 自定义计算表中最大键值函数 table_maxn，即返回表最大键值
+function table_maxn(t)
+    local mn = 0
+    for k, v in pairs(t) do
+        if mn < k then
+            mn = k
+        end
+    end
+    return mn
+end
+
+-- 两表相加操作
+mytable = setmetatable({ 1, 2, 3 }, {
+    __add = function(mytable, newtable)
+        for i = 1, table_maxn(newtable) do
+            table.insert(mytable, table_maxn(mytable) + 1, newtable[i])
+        end
+        return mytable
+    end
+})
+
+secondtable = { 4, 5, 6 }
+
+mytable = mytable + secondtable
+for k, v in ipairs(mytable) do
+    print(k, v)
+end
+
+--Lua 协同程序(coroutine)与线程比较类似：拥有独立的堆栈，独立的局部变量，独立的指令指针，同时又与其它协同程序共享全局变量和其它大部分东西。
+--协同程序可以理解为一种特殊的线程，可以暂停和恢复其执行，从而允许非抢占式的多任务处理。
+--协同是非常强大的功能，但是用起来也很复杂。
+
+--基本语法
+--同程序由 coroutine 模块提供支持。
+--
+--使用协同程序，你可以在函数中使用 coroutine.create 创建一个新的协同程序对象，
+--并使用 coroutine.resume 启动它的执行。协同程序可以通过调用 coroutine.yield 来主动暂停自己的执行，并将控制权交还给调用者。
+
+--方法	描述
+--coroutine.create()	创建 coroutine，返回 coroutine， 参数是一个函数，当和 resume 配合使用的时候就唤醒函数调用
+--coroutine.resume()	重启 coroutine，和 create 配合使用
+--coroutine.yield()	挂起 coroutine，将 coroutine 设置为挂起状态，这个和 resume 配合使用能有很多有用的效果
+--coroutine.status()	查看 coroutine 的状态
+--注：coroutine 的状态有三种：dead，suspended，running，具体什么时候有这样的状态请参考下面的程序
+--coroutine.wrap（）	创建 coroutine，返回一个函数，一旦你调用这个函数，就进入 coroutine，和 create 功能重复
+--coroutine.running()	返回正在跑的 coroutine，一个 coroutine 就是一个线程，当使用running的时候，就是返回一个 coroutine 的线程号
+function foo()
+    print("协同程序 foo 开始执行")
+    local value = coroutine.yield("暂停 foo 的执行")
+    print("协同程序 foo 恢复执行，传入的值为: " .. tostring(value))
+    print("协同程序 foo 结束执行")
+end
+
+-- 创建协同程序
+local co = coroutine.create(foo)
+
+-- 启动协同程序
+local status, result = coroutine.resume(co)
+print(result) -- 输出: 暂停 foo 的执行
+
+-- 恢复协同程序的执行，并传入一个值
+status, result = coroutine.resume(co, 42)
+print(result) -- 输出: 协同程序 foo 恢复执行，传入的值为: 42
+
+
+--file = io.open (filename [, mode])
+--mode 的值有：
+--
+--模式	描述
+--r	以只读方式打开文件，该文件必须存在。
+--w	打开只写文件，若文件存在则文件长度清为0，即该文件内容会消失。若文件不存在则建立该文件。
+--a	以附加的方式打开只写文件。若文件不存在，则会建立该文件，如果文件存在，写入的数据会被加到文件尾，即文件原先的内容会被保留。（EOF符保留）
+--r+	以可读写方式打开文件，该文件必须存在。
+--w+	打开可读写文件，若文件存在则文件长度清为零，即该文件内容会消失。若文件不存在则建立该文件。
+--a+	与a类似，但此文件可读可写
+--b	二进制模式，如果文件是二进制文件，可以加上b
+--+	号表示对文件既可以读也可以写
+
+--file:seek(optional whence, optional offset): 设置和获取当前文件位置,成功则返回最终的文件位置(按字节),失败则返回nil加错误信息。参数 whence 值可以是:
+--
+--"set": 从文件头开始
+--"cur": 从当前位置开始[默认]
+--"end": 从文件尾开始
+--offset:默认为0
+--不带参数file:seek()则返回当前位置,file:seek("set")则定位到文件头,file:seek("end")则定位到文件尾并返回文件大小
+--file:flush(): 向文件写入缓冲中的所有数据
+--
+--io.lines(optional file name): 打开指定的文件 filename 为读模式并返回一个迭代函数，每次调用将获得文件中的一行内容，当到文件尾时，将返回 nil，并自动关闭文件。
+--若不带参数时io.lines() <=> io.input():lines(); 读取默认输入设备的内容，但结束时不关闭文件，如：
+
+page = 0
+for line in io.lines("hello.lua") do
+    if page > 10 then
+        break
+    end
+    print(line)
+    page = page + 1;
+end
+
+--error函数
+--语法格式：
+--
+--error (message [, level])
+--功能：终止正在执行的函数，并返回message的内容作为错误信息(error函数永远都不会返回)
+--
+--通常情况下，error会附加一些错误位置的信息到message头部。
+--
+--Level参数指示获得错误的位置:
+--
+--Level=1[默认]：为调用error位置(文件+行号)
+--Level=2：指出哪个调用error的函数的函数
+--Level=0:不添加错误位置信息
+
+--pcall以一种"保护模式"来调用第一个参数，因此pcall可以捕获函数执行中的任何错误。
+--通常在错误发生时，希望落得更多的调试信息，而不只是发生错误的位置。但pcall返回时，它已经销毁了调用桟的部分内容。
+--Lua提供了xpcall函数，xpcall接收第二个参数——一个错误处理函数，当错误发生时，Lua会在调用桟展开（unwind）前调用错误处理函数，于是就可以在这个函数中使用debug库来获取关于错误的额外信息了。
+--debug库提供了两个通用的错误处理函数:
+--debug.debug：提供一个Lua提示符，让用户来检查错误的原因
+--debug.traceback：根据调用桟来构建一个扩展的错误消息
+
+function myfunction ()
+    n = n / nil
+end
+
+function myerrorhandler(err)
+    print("ERROR:", err)
+end
+
+status = xpcall(myfunction, myerrorhandler)
+print(status)
+
+--垃圾回收器函数
+--Lua 提供了以下函数collectgarbage ([opt [, arg]])用来控制自动内存管理:
+--
+--collectgarbage("collect"): 做一次完整的垃圾收集循环。通过参数 opt 它提供了一组不同的功能：
+--
+--collectgarbage("count"): 以 K 字节数为单位返回 Lua 使用的总内存数。 这个值有小数部分，所以只需要乘上 1024 就能得到 Lua 使用的准确字节数（除非溢出）。
+--
+--collectgarbage("restart"): 重启垃圾收集器的自动运行。
+--
+--collectgarbage("setpause"): 将 arg 设为收集器的 间歇率。 返回 间歇率 的前一个值。
+--
+--collectgarbage("setstepmul"): 返回 步进倍率 的前一个值。
+--
+--collectgarbage("step"): 单步运行垃圾收集器。 步长"大小"由 arg 控制。 传入 0 时，收集器步进（不可分割的）一步。 传入非 0 值， 收集器收集相当于 Lua 分配这些多（K 字节）内存的工作。 如果收集器结束一个循环将返回 true 。
+--
+--collectgarbage("stop"): 停止垃圾收集器的运行。 在调用重启前，收集器只会因显式的调用运行。
+
+mytable = {"apple", "orange", "banana"}
+
+print(collectgarbage("count"))
+
+mytable = nil
+
+print(collectgarbage("count"))
+
+print(collectgarbage("collect"))
+
+print(collectgarbage("count"))
+
+
+--Lua 数据库访问
+--本文主要为大家介绍 Lua 数据库的操作库：LuaSQL。他是开源的，支持的数据库有：ODBC, ADO, Oracle, MySQL, SQLite 和 PostgreSQL。
+--
+--本文为大家介绍MySQL的数据库连接。
+--
+--LuaSQL 可以使用 LuaRocks 来安装可以根据需要安装你需要的数据库驱动。
+--
+--LuaRocks 安装方法：
+--
+--$ wget http://luarocks.org/releases/luarocks-2.2.1.tar.gz
+--$ tar zxpf luarocks-2.2.1.tar.gz
+--$ cd luarocks-2.2.1
+--$ ./configure; sudo make bootstrap
+--$ sudo luarocks install luasocket
+--$ lua
+--Lua 5.3.0 Copyright (C) 1994-2015 Lua.org, PUC-Rio
+--> require "socket"
+--Window 下安装 LuaRocks：https://github.com/keplerproject/luarocks/wiki/Installation-instructions-for-Windows
+--
+--安装不同数据库驱动：
+--
+--luarocks install luasql-sqlite3
+--luarocks install luasql-postgres
+--luarocks install luasql-mysql
+--luarocks install luasql-sqlite
+--luarocks install luasql-odbc
+--你也可以使用源码安装方式，Lua Github 源码地址：https://github.com/keplerproject/luasql
+
+require "luasql.mysql"
+
+--创建环境对象
+env = luasql.mysql()
+
+--连接数据库
+function connectFun(env)
+   return env:connect("数据库名","用户名","密码","IP地址",8000)
+end
+
+function rollback()
+    print("error")
+end
+
+conn = xpcall(connectFun(env), rollback)
+
+--设置数据库的编码格式
+--conn:execute"SET NAMES UTF8"
+
+--执行数据库操作
+--cur = conn:execute("select * from role")
+
+--row = cur:fetch({},"a")
